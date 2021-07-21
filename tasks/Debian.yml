@@ -1,0 +1,88 @@
+---
+- name: Update repositories cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 28800
+
+- name: Installed package
+  package:
+    name:
+      - sudo
+      - ntp
+    state: latest
+
+- name: Gen Locales Users
+  community.general.locale_gen:
+    name: '{{ item }}'
+    state: present
+  loop: "{{ user_locales }}"
+
+- name: Sudoers Linux | Delete sudoers file and validate
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: '^{{ item.username }} .*'
+    state: absent
+    validate: 'visudo -cf %s'
+  with_items: '{{ delusers + delusers_exts }}'
+
+# Add users
+- name: Create group
+  ansible.builtin.group:
+    name:  "{{ item.username }}"
+    state: "{{ item.state | default(omit) }}"
+    gid:   "{{ item.gid | default(omit) }}"
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Add users Linux
+  ansible.builtin.user:
+    name:         "{{ item.username }}"
+    password:     "{{ item.password | default(omit) }}"
+    comment:      "{{ item.comment | default(omit) }}"
+    expires:      "{{ item.expires | default(-1) }}"
+    create_home: yes
+    home:         "{{ item.homepath | default( '/home/' + item.username ) }}"
+    shell:        "{{ item.shell | default('/bin/bash') }}"
+    uid:          "{{ item.uid | default(omit) }}"
+    group:        "{{ item.username | default(omit) }}"
+    generate_ssh_key: "{{ item.generate_ssh_key | default(omit) }}"
+    ssh_key_bits: "{{ item.ssh_key_bits | default(ansible_ssh_key_bits) }}"
+    state:        "{{ item.state | default(omit) }}"
+  with_items:     "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+  notify: "Killall User Processes"
+
+- name: Add users to groups
+  ansible.builtin.user:
+    name:   "{{ item.username }}"
+    groups: "{{ item.groups }}"
+    append: yes
+  when:
+  - item.groups is defined
+  - item.state|default('present') != 'absent'
+  with_items: "{{ addusers + addusers_exts + exts_user_groups + addusers_exts_hostgroups }}"
+
+- name: Sudoers Linux | update sudoers file and validate
+  lineinfile:
+    dest: /etc/sudoers
+    line: '{{ item.username }} ALL=(ALL) NOPASSWD: ALL'
+    regexp: '^{{ item.username }} .*'
+    state: '{{ item.state | default(omit) }}'
+    validate: 'visudo -cf %s'
+  when:
+  - item.use_sudo is defined
+  - item.use_sudo == True
+  - item.state|default('present') != 'absent'
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Disaple Architecture i386
+  ansible.builtin.shell: "pkg --remove-architecture i386 && touch /var/lib/dpkg/remove-architecture-386"
+  args:
+    # creates: /var/lib/dpkg/arch
+    creates: /var/lib/dpkg/remove-architecture-386
+    warn: no
+
+# Fix /etc/login.defs disable -> #USERGROUPS_ENAB yes
+- name: Fix /etc/login.defs disable -> #USERGROUPS_ENAB yes
+  lineinfile:
+    dest: /etc/login.defs
+    line: '#USERGROUPS_ENAB yes'
+    regexp: '^USERGROUPS_ENAB yes'

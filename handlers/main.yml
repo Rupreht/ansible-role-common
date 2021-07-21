@@ -1,0 +1,31 @@
+---
+- name: Restart ntp
+  service:
+    name: ntpd
+    state: restarted
+  when: ansible_os_family in ["FreeBSD", "RedHat", "CentOS"]
+
+- name: Start ntp
+  service:
+    name: ntpd
+    state: started
+    enabled: yes
+  when: ansible_os_family in ["FreeBSD", "RedHat", "CentOS"]
+
+- name: Restart ntp
+  service:
+    name: ntp
+    state: restarted
+  when: ansible_os_family in ["Debian", "Ubuntu"]
+
+- name: Start ntp
+  service:
+    name: ntp
+    state: started
+    enabled: yes
+  when: ansible_os_family in ["Debian", "Ubuntu"]
+
+- name: Killall User Processes
+  shell: pkill -U {{ item.uid }} || /bin/true
+  when: item.state|default('present') == 'absent'
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"

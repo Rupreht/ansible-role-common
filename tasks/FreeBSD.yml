@@ -1,0 +1,38 @@
+---
+- name: Sudoers BSD | Delete sudoers file and validate
+  lineinfile:
+    dest: /usr/local/etc/sudoers
+    regexp: '^{{ item.username }} .*'
+    state: absent
+    validate: 'visudo -cf %s'
+  with_items: '{{ delusers + delusers_exts }}'
+
+# Add users
+- name: Add users BSD
+  user:
+    name: "{{ item.username }}"
+    comment: "{{ item.comment }}"
+    expires: "{{ item.expires }}"
+    home: "{{ item.homepath | default( '/home/' + item.username ) }}"
+    shell: "{{ item.shell | default('/bin/tcsh') }}"
+    # uid: '{{ item.uid | default(0) }}'
+    # group: '{{ item.gid | default(0) }}'
+    # groups: ""
+    createhome: yes
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Sudoers BSD | update sudoers file and validate
+  lineinfile:
+    dest: /usr/local/etc/sudoers
+    line: '{{ item.username }} ALL=(ALL) NOPASSWD: ALL'
+    regexp: '^{{ item.username }} .*'
+    state: present
+    validate: 'visudo -cf %s'
+  when:
+    - item.use_sudo == True
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Set var driftfile
+  set_fact:
+    driftfile: "/var/db/ntpd.drift"
+  when: ansible_facts['os_family'] == "FreeBSD"

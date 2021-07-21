@@ -1,0 +1,82 @@
+---
+
+# Del users
+
+- name: Remove users
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: absent
+    remove: yes
+  with_items: '{{ delusers + delusers_exts }}'
+  notify: "Killall User Processes"
+
+- name: Remove groups
+  ansible.builtin.group:
+    name: "{{ item.username }}"
+    state: absent
+  with_items: '{{ delusers + delusers_exts }}'
+
+- name: Delete home dirs
+  file:
+    path: '{{ item.homepath | default("/home/" + "{{ item.username }}") }}'
+    state: absent
+  when:
+    - item.homedir is defined
+    - item.homedir == True
+  with_items: '{{ delusers + delusers_exts }}'
+
+# Fix
+- name: Make sure we have a 'admin' group
+  ansible.builtin.group:
+    name: admin
+    state: absent
+
+- name: Add dot files
+  copy:
+    src:   '{{ item.src }}'
+    dest:  '{{ item.dest }}'
+    mode:  '{{ item.mode  | default(omit) }}'
+    owner: '{{ item.owner | default(omit) }}'
+    group: '{{ item.group | default(omit) }}'
+  with_items:
+    - { src: ../files/inputrc,   dest: /etc/skel/.inputrc }
+    - { src: ../files/vimrc,     dest: /etc/skel/.vimrc }
+    - { src: ../files/profile,   dest: /etc/skel/.profile }
+    - { src: ../files/umask.022, dest: /etc/profile.d/umask.sh }
+    - { src: ../files/inputrc,   dest: /root/.inputrc }
+    - { src: ../files/bashrc,    dest: /root/.bashrc }
+
+# - include_tasks: "{{ ansible_distribution }}.yml"
+- include_tasks: "{{ ansible_os_family }}.yml"
+
+- name: Set permissions home directory
+  file:
+    state: directory
+    path: "{{ item.homepath | default( '/home/' + item.username ) }}"
+    mode: "{{ item.home_mode | default('0750') }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+  when: item.state|default('present') != 'absent'
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Set authorized key taken from file
+  authorized_key:
+    user: '{{ item.username }}'
+    state: present
+    key: "{{ lookup('file', '{{playbook_dir}}/public_keys/{{ item.username }}.pub') }}"
+  when:
+  - item.authorizedkey is defined and item.authorizedkey == True
+  - item.state|default('present') != 'absent'
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+# NTP
+- name: Setting timezone "{{ ntp_timezone }}"
+  timezone:
+    name: "{{ ntp_timezone }}"
+
+- name: Configure ntp file
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+  tags: ntp
+  notify: Restart ntp

@@ -1,0 +1,37 @@
+---
+- name: Sudoers Linux | Delete sudoers file and validate
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: '^{{ item.username }} .*'
+    state: absent
+    validate: 'visudo -cf %s'
+  with_items: '{{ delusers + delusers_exts }}'
+
+# Add users
+- name: Add users Linux
+  ansible.builtin.user:
+    name:     "{{ item.username }}"
+    password: "{{ item.password | default(omit) }}"
+    comment:  "{{ item.comment | default(omit) }}"
+    expires:  "{{ item.expires | default(-1) }}"
+    home:     "{{ item.homepath | default( '/home/' + item.username ) }}"
+    shell:    "{{ item.shell | default('/bin/bash') }}"
+    uid:      "{{ item.uid | default(omit) }}"
+    group:    "{{ item.gid | default(omit) }}"
+    generate_ssh_key: "{{ item.generate_ssh_key | default(omit) }}"
+    ssh_key_bits: "{{ item.ssh_key_bits | default(ansible_ssh_key_bits) }}"
+    create_home: yes
+    state: '{{ item.state | default(omit) }}'
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
+
+- name: Sudoers Linux | update sudoers file and validate
+  lineinfile:
+    dest: /etc/sudoers
+    line: '{{ item.username }} ALL=(ALL) NOPASSWD: ALL'
+    regexp: '^{{ item.username }} .*'
+    state: present
+    validate: 'visudo -cf %s'
+  when:
+  - item.use_sudo is defined
+  - item.use_sudo == True
+  with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
