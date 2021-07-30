@@ -74,7 +74,7 @@
   with_items: "{{ addusers + addusers_exts + addusers_exts_hostgroups }}"
 
 - name: Disaple Architecture i386
-  ansible.builtin.shell: "pkg --remove-architecture i386 && touch /var/lib/dpkg/remove-architecture-386"
+  ansible.builtin.shell: "dpkg --remove-architecture i386 && touch /var/lib/dpkg/remove-architecture-386"
   args:
     # creates: /var/lib/dpkg/arch
     creates: /var/lib/dpkg/remove-architecture-386
