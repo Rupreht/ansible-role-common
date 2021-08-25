@@ -12,7 +12,7 @@
     state: latest
 
 - name: Gen Locales Users
-  community.general.locale_gen:
+  locale_gen:
     name: '{{ item }}'
     state: present
   loop: "{{ user_locales }}"
