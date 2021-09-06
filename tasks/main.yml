@@ -45,6 +45,8 @@
     - { src: ../files/umask.022, dest: /etc/profile.d/umask.sh }
     - { src: ../files/inputrc,   dest: /root/.inputrc }
     - { src: ../files/bashrc,    dest: /root/.bashrc }
+    - { src: ../files/secrets,   dest: /etc/profile.d/secrets.sh }
+    - { src: ../files/mk-sensitive-dir.sh, dest: /usr/local/sbin/mk-sensitive-dir.sh, mode: '0700' }
 
 # - include_tasks: "{{ ansible_distribution }}.yml"
 - include_tasks: "{{ ansible_os_family }}.yml"
