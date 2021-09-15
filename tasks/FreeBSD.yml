@@ -2,10 +2,10 @@
 - name: Sudoers BSD | Delete sudoers file and validate
   lineinfile:
     dest: /usr/local/etc/sudoers
-    regexp: '^{{ item.username }} .*'
+    regexp: '^{{ item }} .*'
     state: absent
     validate: 'visudo -cf %s'
-  with_items: '{{ delusers + delusers_exts }}'
+  loop: '{{ delusers + delusers_exts }}'
 
 # Add users
 - name: Add users BSD

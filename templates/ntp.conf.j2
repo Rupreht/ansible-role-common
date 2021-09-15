@@ -30,8 +30,3 @@ server 3.ru.pool.ntp.org iburst prefer
 #keys /etc/ntp/keys
 
 restrict 127.127.1.0
-
-# CLUSTER
-{% for x in hadoop_white_ip %}
-restrict {{ x }} mask 255.255.255.255 nomodify notrap
-{% endfor %}

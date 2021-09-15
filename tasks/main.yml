@@ -4,26 +4,17 @@
 
 - name: Remove users
   ansible.builtin.user:
-    name: "{{ item.username }}"
+    name: "{{ item }}"
     state: absent
     remove: yes
-  with_items: '{{ delusers + delusers_exts }}'
+  loop: '{{ delusers + delusers_exts }}'
   notify: "Killall User Processes"
 
 - name: Remove groups
   ansible.builtin.group:
-    name: "{{ item.username }}"
+    name: "{{ item }}"
     state: absent
-  with_items: '{{ delusers + delusers_exts }}'
-
-- name: Delete home dirs
-  file:
-    path: '{{ item.homepath | default("/home/" + "{{ item.username }}") }}'
-    state: absent
-  when:
-    - item.homedir is defined
-    - item.homedir == True
-  with_items: '{{ delusers + delusers_exts }}'
+  loop: '{{ delusers + delusers_exts }}'
 
 # Fix
 - name: Make sure we have a 'admin' group
