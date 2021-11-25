@@ -11,18 +11,18 @@ umask 022
 # if running bash
 if [ -x "$BASH" ]; then
     # include .bashrc if it exists
-    if [ -f "~/.bashrc" ]; then
-        . ~/.bashrc
+    if [ -f "$HOME/.bashrc" ]; then
+        . $HOME/.bashrc
     fi
 fi
 
 # set PATH so it includes user's private bin if it exists
-if [ -d "~/bin" ]; then
+if [ -d "$HOME/bin" ]; then
     export PATH="$HOME/bin:$PATH"
 fi
 
 # set PATH so it includes user's private bin if it exists
-if [ -d "~/.local/bin" ]; then
+if [ -d "$HOME/.local/bin" ]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
