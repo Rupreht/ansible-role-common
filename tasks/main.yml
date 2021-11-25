@@ -32,6 +32,7 @@
   with_items:
     - { src: ../files/inputrc,   dest: /etc/skel/.inputrc }
     - { src: ../files/vimrc,     dest: /etc/skel/.vimrc }
+    - { src: ../files/profile,   dest: /root/.profile }
     - { src: ../files/profile,   dest: /etc/skel/.profile }
     - { src: ../files/umask.022, dest: /etc/profile.d/umask.sh }
     - { src: ../files/inputrc,   dest: /root/.inputrc }
